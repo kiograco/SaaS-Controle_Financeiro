@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Injector, Input, OnInit, effect, inject, signal } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -23,8 +24,12 @@ export interface ResourceField {
   label: string;
   type: 'text' | 'email' | 'number' | 'money' | 'date' | 'select' | 'textarea';
   required?: boolean;
-  options?: ResourceFieldOption[];
+  options?: ResourceFieldOption[] | (() => ResourceFieldOption[]);
   validators?: ValidatorFn[];
+  inputMode?: 'text' | 'numeric' | 'decimal';
+  maxLength?: number;
+  transformInput?: (value: string, formValue: Record<string, unknown>) => string;
+  searchable?: boolean;
 }
 
 export interface ResourcePageConfig<T> {
@@ -52,6 +57,7 @@ export interface ResourcePageConfig<T> {
     CommonModule,
     ReactiveFormsModule,
     MatButtonModule,
+    MatAutocompleteModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -83,17 +89,35 @@ export interface ResourcePageConfig<T> {
           <ng-container *ngFor="let field of config.fields">
             <mat-form-field appearance="outline" class="form-col-6" *ngIf="field.type === 'money'">
               <mat-label>{{ field.label }}</mat-label>
+              <span matTextPrefix>R$&nbsp;</span>
               <input matInput type="text" [formControlName]="field.key" appMoneyInput>
             </mat-form-field>
             <mat-form-field appearance="outline" class="form-col-6" *ngIf="field.type !== 'textarea' && field.type !== 'select' && field.type !== 'money'">
               <mat-label>{{ field.label }}</mat-label>
-              <input matInput [type]="field.type" [formControlName]="field.key">
+              <input
+                matInput
+                [type]="field.type"
+                [formControlName]="field.key"
+                [attr.inputmode]="field.inputMode ?? null"
+                [attr.maxlength]="field.maxLength ?? null"
+                (input)="handleTextInput(field, $event)">
             </mat-form-field>
-            <mat-form-field appearance="outline" class="form-col-6" *ngIf="field.type === 'select'">
+            <mat-form-field appearance="outline" class="form-col-6" *ngIf="field.type === 'select' && !field.searchable">
               <mat-label>{{ field.label }}</mat-label>
               <mat-select [formControlName]="field.key">
-                <mat-option *ngFor="let option of field.options ?? []" [value]="option.value">{{ option.label }}</mat-option>
+                <mat-option *ngFor="let option of getFieldOptions(field)" [value]="option.value">{{ option.label }}</mat-option>
               </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="form-col-6" *ngIf="field.type === 'select' && field.searchable">
+              <mat-label>{{ field.label }}</mat-label>
+              <input
+                matInput
+                type="text"
+                [formControl]="getSearchControl(field)"
+                [matAutocomplete]="auto">
+              <mat-autocomplete #auto="matAutocomplete" (optionSelected)="selectSearchableOption(field, $event.option.value)">
+                <mat-option *ngFor="let option of getFilteredFieldOptions(field)" [value]="option.label">{{ option.label }}</mat-option>
+              </mat-autocomplete>
             </mat-form-field>
             <mat-form-field appearance="outline" class="form-col-12" *ngIf="field.type === 'textarea'">
               <mat-label>{{ field.label }}</mat-label>
@@ -131,6 +155,7 @@ export class ResourcePageComponent implements OnInit {
   readonly editing = signal(false);
   readonly editingId = signal<string | null>(null);
   readonly searchControl = new FormControl('', { nonNullable: true });
+  readonly searchableControls: Record<string, FormControl<string>> = {};
 
   form: FormGroup = this.fb.group({});
 
@@ -147,6 +172,7 @@ export class ResourcePageComponent implements OnInit {
         return [field.key, this.fb.control('', validators)];
       }))
     );
+    this.initializeSearchableControls();
     this.searchControl.valueChanges.subscribe(() => this.load());
     effect(() => {
       const companyId = this.companyContext.selectedCompanyId();
@@ -174,12 +200,14 @@ export class ResourcePageComponent implements OnInit {
 
   startCreate(): void {
     this.form.reset(this.config.initialValue() as Record<string, unknown>);
+    this.syncSearchableControlsFromForm();
     this.editingId.set(null);
     this.editing.set(true);
   }
 
   startEdit(item: any): void {
     this.form.reset(item as Record<string, unknown>);
+    this.syncSearchableControlsFromForm();
     this.editingId.set(this.config.getId(item));
     this.editing.set(true);
   }
@@ -220,5 +248,77 @@ export class ResourcePageComponent implements OnInit {
         this.load();
       }
     });
+  }
+
+  getFieldOptions(field: ResourceField): ResourceFieldOption[] {
+    if (!field.options) {
+      return [];
+    }
+    return typeof field.options === 'function' ? field.options() : field.options;
+  }
+
+  getSearchControl(field: ResourceField): FormControl<string> {
+    return this.searchableControls[field.key];
+  }
+
+  getFilteredFieldOptions(field: ResourceField): ResourceFieldOption[] {
+    const query = this.getSearchControl(field)?.value?.toLowerCase().trim() ?? '';
+    const options = this.getFieldOptions(field);
+    if (!query) {
+      return options;
+    }
+
+    return options.filter((option) => option.label.toLowerCase().includes(query));
+  }
+
+  selectSearchableOption(field: ResourceField, label: string): void {
+    const option = this.getFieldOptions(field).find((item) => item.label === label);
+    if (!option) {
+      return;
+    }
+
+    this.form.get(field.key)?.setValue(option.value);
+    this.getSearchControl(field).setValue(option.label, { emitEvent: false });
+  }
+
+  handleTextInput(field: ResourceField, event: Event): void {
+    if (!field.transformInput) {
+      return;
+    }
+
+    const input = event.target as HTMLInputElement;
+    const transformedValue = field.transformInput(input.value, this.form.getRawValue());
+    if (transformedValue === input.value) {
+      return;
+    }
+
+    input.value = transformedValue;
+    this.form.get(field.key)?.setValue(transformedValue);
+  }
+
+  private initializeSearchableControls(): void {
+    for (const field of this.config.fields.filter((item) => item.type === 'select' && item.searchable)) {
+      const control = new FormControl('', { nonNullable: true });
+      control.valueChanges.subscribe((value) => {
+        if (!value) {
+          this.form.get(field.key)?.setValue(null);
+          return;
+        }
+
+        const exactMatch = this.getFieldOptions(field).find((option) => option.label === value);
+        if (exactMatch) {
+          this.form.get(field.key)?.setValue(exactMatch.value);
+        }
+      });
+      this.searchableControls[field.key] = control;
+    }
+  }
+
+  private syncSearchableControlsFromForm(): void {
+    for (const field of this.config.fields.filter((item) => item.type === 'select' && item.searchable)) {
+      const value = this.form.get(field.key)?.value;
+      const label = this.getFieldOptions(field).find((option) => option.value === value)?.label ?? '';
+      this.getSearchControl(field).setValue(label, { emitEvent: false });
+    }
   }
 }

@@ -2,6 +2,25 @@ import { Component, inject } from '@angular/core';
 import { ResourcePageComponent, ResourcePageConfig } from '../../../shared/components/resource-page.component';
 import { BankAccount } from '../../../core/models/finance.models';
 import { BankAccountService } from '../../../core/services/bank-account.service';
+import { BRAZILIAN_BANK_OPTIONS } from '../../../core/data/brazilian-banks';
+import { bankAccountNumberValidator, digitsOnlyValidator, nonNegativeMoneyValidator } from '../../../shared/validators/br-validators';
+
+function digitsOnly(value: string): string {
+  return value.replace(/\D/g, '');
+}
+
+function normalizeAccountNumber(value: string, bankName: string): string {
+  const upperValue = value.toUpperCase();
+  const isBancoDoBrasil = bankName.startsWith('001 - Banco do Brasil S.A.');
+
+  if (!isBancoDoBrasil) {
+    return digitsOnly(upperValue);
+  }
+
+  const stripped = upperValue.replace(/[^0-9X]/g, '');
+  const digits = stripped.replace(/X/g, '');
+  return stripped.includes('X') ? `${digits}X` : digits;
+}
 
 @Component({
   selector: 'app-bank-accounts-page',
@@ -27,10 +46,27 @@ export class BankAccountsPageComponent {
     ],
     fields: [
       { key: 'name', label: 'Nome da conta', type: 'text', required: true },
-      { key: 'bankName', label: 'Banco', type: 'text', required: true },
-      { key: 'branchNumber', label: 'Agência', type: 'text' },
-      { key: 'accountNumber', label: 'Número da conta', type: 'text', required: true },
-      { key: 'balance', label: 'Saldo inicial', type: 'number', required: true }
+      { key: 'bankName', label: 'Banco', type: 'select', required: true, searchable: true, options: BRAZILIAN_BANK_OPTIONS },
+      {
+        key: 'branchNumber',
+        label: 'Agência',
+        type: 'text',
+        inputMode: 'numeric',
+        maxLength: 10,
+        validators: [digitsOnlyValidator()],
+        transformInput: (value) => digitsOnly(value)
+      },
+      {
+        key: 'accountNumber',
+        label: 'Número da conta',
+        type: 'text',
+        required: true,
+        inputMode: 'text',
+        maxLength: 20,
+        validators: [bankAccountNumberValidator()],
+        transformInput: (value, formValue) => normalizeAccountNumber(value, String(formValue['bankName'] ?? ''))
+      },
+      { key: 'balance', label: 'Saldo inicial', type: 'money', required: true, validators: [nonNegativeMoneyValidator()] }
     ]
   };
 }

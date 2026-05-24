@@ -59,7 +59,7 @@ export interface FinancialTransaction {
   id: string | null;
   categoryId: string | null;
   costCenterId: string | null;
-  bankAccountId: string;
+  bankAccountId: string | null;
   payableId: string | null;
   receivableId: string | null;
   description: string;

@@ -59,6 +59,42 @@ export function positiveMoneyValidator(): ValidatorFn {
   };
 }
 
+export function nonNegativeMoneyValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    if (control.value === null || control.value === undefined || control.value === '') {
+      return null;
+    }
+    const value = Number(String(control.value).replace(',', '.'));
+    return value >= 0 ? null : { nonNegativeMoney: true };
+  };
+}
+
+export function digitsOnlyValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const value = String(control.value ?? '').trim();
+    if (!value) {
+      return null;
+    }
+
+    return /^\d+$/.test(value) ? null : { digitsOnly: true };
+  };
+}
+
+export function bankAccountNumberValidator(bankFieldKey = 'bankName'): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const value = String(control.value ?? '').trim().toUpperCase();
+    if (!value) {
+      return null;
+    }
+
+    const bankName = String(control.parent?.get(bankFieldKey)?.value ?? '');
+    const isBancoDoBrasil = bankName.startsWith('001 - Banco do Brasil S.A.');
+    const pattern = isBancoDoBrasil ? /^\d+X?$/ : /^\d+$/;
+
+    return pattern.test(value) ? null : { bankAccountNumber: true };
+  };
+}
+
 export function brDateValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     const value = String(control.value ?? '');

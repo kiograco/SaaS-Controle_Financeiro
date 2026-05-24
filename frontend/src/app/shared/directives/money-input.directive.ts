@@ -1,6 +1,7 @@
-import { Directive, ElementRef, HostListener, Input, OnInit } from '@angular/core';
+import { Directive, ElementRef, HostListener, Input, OnDestroy, OnInit } from '@angular/core';
 import { NgControl } from '@angular/forms';
-import { formatInputCurrency, parseBrCurrency, normalizeMoneyValue } from '../utils/formatters';
+import { Subscription } from 'rxjs';
+import { formatMoneyInputValue, formatPartialMoneyInput, parseBrCurrency } from '../utils/formatters';
 
 /**
  * Directive para aplicar máscara de entrada financeira em padrão BR
@@ -14,8 +15,9 @@ import { formatInputCurrency, parseBrCurrency, normalizeMoneyValue } from '../ut
   selector: 'input[appMoneyInput]',
   standalone: true
 })
-export class MoneyInputDirective implements OnInit {
+export class MoneyInputDirective implements OnInit, OnDestroy {
   @Input() showCurrency = false;
+  private controlSubscription?: Subscription;
 
   constructor(
     private el: ElementRef<HTMLInputElement>,
@@ -23,28 +25,34 @@ export class MoneyInputDirective implements OnInit {
   ) {}
 
   ngOnInit() {
-    // Define o tipo de input como text para aceitar máscara
     this.el.nativeElement.type = 'text';
-    // Define o padrão de entrada (números, vírgula, ponto)
     this.el.nativeElement.inputMode = 'decimal';
+    this.syncInputFromControl();
+    this.controlSubscription = this.ngControl.control?.valueChanges.subscribe(() => {
+      this.syncInputFromControl();
+    });
+  }
+
+  ngOnDestroy() {
+    this.controlSubscription?.unsubscribe();
   }
 
   @HostListener('input', ['$event'])
   onInput(event: Event) {
     const input = event.target as HTMLInputElement;
-    let value = input.value;
+    const value = input.value;
 
     // Se vazio, limpa
     if (!value) {
       input.value = '';
+      this.ngControl.control?.setValue(null, { emitEvent: false });
       return;
     }
 
     // Formata a entrada
-    const formatted = formatInputCurrency(value);
+    const formatted = formatPartialMoneyInput(value);
     input.value = formatted;
 
-    // Atualiza o controle do formulário com o número normalizado
     if (this.ngControl && this.ngControl.control) {
       const numericValue = parseBrCurrency(formatted);
       this.ngControl.control.setValue(numericValue, { emitEvent: false });
@@ -60,17 +68,39 @@ export class MoneyInputDirective implements OnInit {
       return;
     }
 
-    // Garante o valor correto no controle
     if (this.ngControl && this.ngControl.control) {
       const numericValue = parseBrCurrency(value);
       this.ngControl.control.setValue(numericValue, { emitEvent: false });
+      input.value = formatMoneyInputValue(numericValue);
     }
   }
 
   @HostListener('focus', ['$event'])
   onFocus(event: Event) {
     const input = event.target as HTMLInputElement;
-    // Seleciona todo o texto ao focar para facilitar edição
-    input.select();
+    if (input.value === '0,00') {
+      input.value = '';
+      this.ngControl.control?.setValue(null, { emitEvent: false });
+    }
+
+    input.value = formatPartialMoneyInput(input.value);
+    const length = input.value.length;
+    input.setSelectionRange(length, length);
+  }
+
+  private syncInputFromControl() {
+    const controlValue = this.ngControl.control?.value;
+    if (controlValue === null || controlValue === undefined || controlValue === '') {
+      this.el.nativeElement.value = '';
+      return;
+    }
+
+    if (typeof controlValue === 'number') {
+      this.el.nativeElement.value = formatMoneyInputValue(controlValue);
+      return;
+    }
+
+    const numericValue = parseBrCurrency(String(controlValue));
+    this.el.nativeElement.value = formatMoneyInputValue(numericValue);
   }
 }

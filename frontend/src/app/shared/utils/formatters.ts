@@ -20,7 +20,7 @@ export function parseBrCurrency(value: string | null | undefined): number {
   // Remove espaços e símbolos de moeda
   let cleaned = str.replace(/[R$\s]/g, '');
   // Converte formato BR para número: 1.234,56 → 1234.56
-  cleaned = cleaned.replace('.', '').replace(',', '.');
+  cleaned = cleaned.replace(/\./g, '').replace(',', '.');
   const parsed = parseFloat(cleaned);
   return isNaN(parsed) ? 0 : parsed;
 }
@@ -53,6 +53,50 @@ export function formatInputCurrency(value: string): string {
   const formatted = parteInteira.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   
   return `${formatted},${centavos}`;
+}
+
+/**
+ * Formata a digitação monetária preservando a parte decimal informada pelo usuário.
+ * Exemplos:
+ * "12" -> "12"
+ * "12,3" -> "12,3"
+ * "1234,56" -> "1.234,56"
+ */
+export function formatPartialMoneyInput(value: string): string {
+  if (!value) {
+    return '';
+  }
+
+  const sanitized = value
+    .replace(/[R$\s]/g, '')
+    .replace(/\./g, '')
+    .replace(/[^0-9,]/g, '');
+
+  const [rawInteger = '', ...decimalParts] = sanitized.split(',');
+  const decimal = decimalParts.join('').slice(0, 2);
+  const normalizedInteger = rawInteger.replace(/^0+(?=\d)/, '') || '0';
+  const formattedInteger = normalizedInteger.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+  if (sanitized.includes(',')) {
+    return `${formattedInteger},${decimal}`;
+  }
+
+  return formattedInteger;
+}
+
+/**
+ * Formata um número para o padrão de input monetário BR sem símbolo (1.234,56)
+ */
+export function formatMoneyInputValue(value: number | null | undefined): string {
+  const numericValue = Number(value ?? 0);
+  if (!Number.isFinite(numericValue)) {
+    return '';
+  }
+
+  return new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(numericValue);
 }
 
 /**
