@@ -1,17 +1,35 @@
-# SaaS Finance
+# SaaS Controle Financeiro
 
-Sistema SaaS de Gestao Financeira e Gestao de Ponto multiempresa, construído com Java 21 e Spring Boot 3, com foco em isolamento estrito por empresa, autenticação JWT e trilha de auditoria.
+Sistema SaaS multiempresa de gestao financeira e gestao de ponto, com backend em Java 21 + Spring Boot 3 e frontend em Angular 18.
 
-## Funcionalidades
+## Visao geral
 
-- Autenticacao com `register`, `login` e `refresh token`
-- Multiempresa com validacao de membership e isolamento por `company_id`
+O projeto combina:
+
+- autenticacao JWT com controle de acesso por perfil
+- isolamento por empresa com `company_id`
+- modulos financeiros completos
+- gestao de ponto com funcionarios, jornadas, registros, espelho, relatorios e importacao CSV
+- auditoria de operacoes criticas
+
+## Funcionalidades principais
+
+- Multiempresa com selecao obrigatoria de empresa antes de usar as areas internas
 - Perfis: `SUPER_ADMIN`, `COMPANY_ADMIN`, `FINANCE_MANAGER`, `FINANCE_VIEWER`, `HR_MANAGER`, `HR_VIEWER`
-- CRUD financeiro para categorias, centros de custo, contas bancarias, contas a pagar, contas a receber e lancamentos
-- Dashboard financeiro e relatorios mensais
-- Gestao de Ponto com funcionarios, jornadas, marcacoes, espelho de ponto e importacao CSV
-- Historico de importacoes com erros por linha
-- Auditoria de operacoes criticas
+- CRUD de categorias, centros de custo, contas bancarias, contas a pagar, contas a receber e transacoes
+- Dashboard e relatorios financeiros
+- Cadastro de funcionarios
+- Cadastro de jornadas com:
+  - minutos diarios esperados
+  - tolerancia
+  - minutos de descanso
+  - horario de entrada
+  - horario de saida
+- Vinculo de jornada ao funcionario
+- Registros manuais de ponto com selecao de funcionario por nome
+- Espelho de ponto por periodo
+- Relatorio mensal de ponto
+- Importacao CSV com preview, confirmacao, historico de lotes, erros por linha e exclusao de lote importado
 
 ## Tecnologias
 
@@ -23,33 +41,106 @@ Sistema SaaS de Gestao Financeira e Gestao de Ponto multiempresa, construído co
 - Flyway
 - Bean Validation
 - MapStruct
-- Swagger / OpenAPI
+- Angular 18
+- Angular Material
+- RxJS
 - Docker / Docker Compose
-- JUnit 5 + Testcontainers
 
-## Arquitetura
+## Estrutura
 
-O codigo segue uma organizacao em camadas por dominio em `src/main/java/com/example/finance`, separando `controller`, `service`, `repository`, `dto`, `mapper` e objetos comuns. Os modulos centrais sao:
+Backend em `src/main/java/com/example/finance`:
 
 - `auth`, `security`, `user`, `company`, `membership`
 - `category`, `costcenter`, `bankaccount`, `payable`, `receivable`, `transaction`, `dashboard`
 - `employee`, `timeschedule`, `timeentry`, `timesheet`, `timeimport`, `timereport`
 - `audit`, `common`, `exception`
 
-## Seguranca e Isolamento
+Frontend em `frontend/src/app`:
 
-- Toda tabela de negocio usa `company_id`
-- Toda operacao valida acesso do usuario a empresa
-- O backend nao confia em `companyId` do frontend sem membership valido
-- JWT protege as rotas da API
-- Senhas usam BCrypt
-- Login tem rate limiting
-- Respostas de erro nao expoem stack trace
-- Auditoria registra criacao, atualizacao, exclusao, recalculo e importacao
+- `core`
+- `shared`
+- `layout`
+- `features/auth`
+- `features/companies`
+- `features/finance`
+- `features/time-tracking`
+- `features/settings`
 
-## Gestao Financeira
+## Fluxo multiempresa
 
-Endpoints principais:
+- Ao entrar no sistema, a escolha da empresa e obrigatoria
+- Se nenhuma empresa estiver ativa, o usuario e redirecionado para `/company/select`
+- O seletor do topo foi removido; a troca de empresa fica centralizada na tela de selecao
+
+## Gestao de ponto
+
+### Jornadas
+
+Cada jornada pode armazenar:
+
+- nome
+- horario de entrada
+- horario de saida
+- minutos diarios esperados
+- tolerancia
+- minutos de descanso
+
+Tambem existe um bloco para vincular a jornada a um funcionario ja cadastrado.
+
+### Registros de ponto
+
+- o funcionario e selecionado pelo nome
+- o campo de hora segue o padrao de horario
+- os registros importados e manuais alimentam o espelho e os relatorios
+
+### Calculo de horas
+
+O sistema considera como referencia padrao:
+
+- 8 horas de trabalho por dia
+- 2 horas de descanso como padrao operacional quando nao houver configuracao mais especifica
+
+Quando o funcionario possui jornada vinculada, a jornada cadastrada passa a ser a referencia principal para calculos.
+
+### Importacao CSV
+
+Layout aceito:
+
+```csv
+cpf;data;hora;tipo;nome;matricula;departamento;observacao
+```
+
+Formatos aceitos:
+
+- separador `;` ou `,`
+- data: `dd/MM/yyyy`, `dd-MM-yyyy`, `yyyy-MM-dd`
+- hora: `HH:mm` ou `HH:mm:ss`
+
+Tipos aceitos no CSV:
+
+- `Entrada`
+- `Saida Almoco`
+- `Retorno Almoco`
+- `Saida`
+- `Ajuste Manual`
+
+O fluxo de importacao:
+
+1. gerar preview
+2. confirmar importacao
+3. consultar historico e erros
+4. abrir espelho do periodo ou relatorio do mes importado
+5. excluir o lote importado, se necessario
+
+Observacoes importantes:
+
+- o sistema trata BOM no cabecalho do arquivo
+- funcionarios ausentes podem ser criados automaticamente
+- funcionarios criados pela importacao permanecem cadastrados para reutilizacao em novos CSVs
+
+## Endpoints principais
+
+### Financeiro
 
 - `GET/POST/PUT/DELETE /api/v1/companies/{companyId}/categories`
 - `GET/POST/PUT/DELETE /api/v1/companies/{companyId}/cost-centers`
@@ -57,12 +148,10 @@ Endpoints principais:
 - `GET/POST/PUT/DELETE /api/v1/companies/{companyId}/payables`
 - `GET/POST/PUT/DELETE /api/v1/companies/{companyId}/receivables`
 - `GET/POST/PUT/DELETE /api/v1/companies/{companyId}/transactions`
-- `GET /api/v1/companies/{companyId}/dashboard?month=2026-05`
-- `GET /api/v1/companies/{companyId}/reports/monthly?month=2026-05`
+- `GET /api/v1/companies/{companyId}/dashboard`
+- `GET /api/v1/companies/{companyId}/reports/monthly`
 
-## Gestao de Ponto
-
-Endpoints principais:
+### Ponto
 
 - `GET/POST /api/v1/companies/{companyId}/employees`
 - `GET/POST/PUT /api/v1/companies/{companyId}/work-schedules`
@@ -71,86 +160,40 @@ Endpoints principais:
 - `GET /api/v1/companies/{companyId}/time/sheets`
 - `POST /api/v1/companies/{companyId}/time/sheets/recalculate`
 - `GET /api/v1/companies/{companyId}/time/reports/monthly`
+- `POST /api/v1/companies/{companyId}/time/imports/preview`
+- `POST /api/v1/companies/{companyId}/time/imports/confirm`
+- `GET /api/v1/companies/{companyId}/time/imports`
+- `GET /api/v1/companies/{companyId}/time/imports/{batchId}/errors`
+- `DELETE /api/v1/companies/{companyId}/time/imports/{batchId}`
 
-## Importacao CSV
-
-Colunas obrigatorias:
-
-- `cpf`
-- `data`
-- `hora`
-- `tipo`
-
-Formatos aceitos:
-
-- Data: `dd/MM/yyyy`, `dd-MM-yyyy`, `yyyy-MM-dd`
-- Hora: `HH:mm`
-- Separador: `;` ou `,`
-
-Mapeamentos:
-
-- `ENTRADA` -> `CLOCK_IN`
-- `INICIO_ALMOCO` -> `LUNCH_START`
-- `FIM_ALMOCO` -> `LUNCH_END`
-- `SAIDA` -> `CLOCK_OUT`
-- `AJUSTE_MANUAL` -> `MANUAL_ADJUSTMENT`
-
-Fluxo:
-
-1. Fazer preview em `POST /api/v1/companies/{companyId}/time/imports/preview`
-2. Confirmar em `POST /api/v1/companies/{companyId}/time/imports/confirm`
-3. Consultar lotes e erros por linha
-
-## Como rodar localmente
+## Como rodar com Docker
 
 1. Copie `.env.example` para `.env`
-2. Suba a stack:
+2. Rode:
 
 ```bash
 docker compose up --build
 ```
 
-3. Enderecos locais:
+Enderecos:
 
-- Backend/API: `http://localhost:8080`
+- Frontend: `http://localhost:4200`
+- API: `http://localhost:8080`
 - Swagger: `http://localhost:8080/swagger`
-- Frontend Angular: `http://localhost:4200`
 
 ## Como rodar sem Docker
 
-1. Suba um PostgreSQL local
-2. Exporte as variaveis do `.env.example`
-3. Execute:
+### Backend
+
+1. Configure um PostgreSQL local
+2. Ajuste as variaveis do `.env.example`
+3. Rode:
 
 ```bash
 mvn spring-boot:run
 ```
 
-## Testes
-
-```bash
-mvn test
-```
-
-Os testes de integracao usam Testcontainers com PostgreSQL.
-
-## Swagger
-
-- UI: `http://localhost:8080/swagger`
-- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
-
-## Frontend Angular
-
-O frontend fica em `frontend/` e entrega:
-
-- autenticacao JWT
-- seletor de empresa
-- dashboard financeiro
-- CRUDs financeiros
-- gestao de ponto com importacao CSV
-- area de usuarios/permissoes
-
-Rodando separadamente:
+### Frontend
 
 ```bash
 cd frontend
@@ -158,53 +201,44 @@ npm install
 npm start
 ```
 
-Ou via Docker Compose junto com a API:
+## Migracoes
+
+As migracoes ficam em `src/main/resources/db/migration`.
+
+Migracoes recentes relevantes:
+
+- `V4__link_time_entries_to_import_batch.sql`
+- `V5__add_times_to_work_schedules.sql`
+
+Se o backend subir sem essas migracoes aplicadas, telas de ponto e jornadas podem falhar.
+
+## Testes
+
+Backend:
 
 ```bash
-docker compose up --build frontend app postgres
+mvn test
 ```
 
-## Exemplos
+Frontend:
 
-### Login
-
-```http
-POST /api/v1/auth/login
-Content-Type: application/json
-
-{
-  "email": "admin@empresa.com.br",
-  "password": "Senha@123"
-}
+```bash
+cd frontend
+npm test
 ```
 
-### Criar categoria
+## Swagger
 
-```http
-POST /api/v1/companies/{companyId}/categories
-Authorization: Bearer {token}
-Content-Type: application/json
+- UI: `http://localhost:8080/swagger`
+- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 
-{
-  "name": "Receitas",
-  "description": "Receitas operacionais",
-  "type": "INCOME",
-  "active": true
-}
-```
+## Credenciais seed
 
-## Seed inicial
-
-- Empresa: `Empresa Exemplo`
 - Usuario: `admin@empresa.com.br`
 - Senha: `Senha@123`
 
-## Roadmap
+## Observacoes
 
-- anexos com armazenamento externo
-- exportacao segura de relatorios
-- notificacoes de vencimento
-- banco de horas por periodo
-- aprovacao formal de ajustes manuais
-# SaaS-Financeiro
-# SaaS-ControleFinanceiro
+- O frontend usa `http://localhost:8080/api/v1` por padrao
+- Relatorios e espelhos de ponto dependem da empresa selecionada
+- Para refletir mudancas no frontend em desenvolvimento, use `Ctrl+F5` no navegador

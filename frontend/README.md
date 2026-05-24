@@ -95,7 +95,7 @@ npm test
 
 ## Multiempresa
 
-- Seleção de empresa no topo da aplicação
+- Seleção obrigatória de empresa na tela dedicada `/company/select`
 - Bloqueio de telas protegidas quando nenhuma empresa está selecionada
 - Envio do cabeçalho `X-Company-Id` em requisições protegidas
 - Menus filtrados por papéis da membership atual
@@ -118,9 +118,10 @@ npm test
 ## Gestão de ponto
 
 - Funcionários e jornadas
-- Registros manuais de ponto
+- Registros manuais de ponto com seleção de funcionário por nome
 - Espelhos por período
 - Relatório mensal com horas trabalhadas, extras e faltas
+- Importação CSV com atalhos para abrir o espelho do período e o relatório do mês importado
 
 ## Importação CSV
 
