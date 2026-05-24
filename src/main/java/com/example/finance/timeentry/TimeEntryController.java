@@ -28,11 +28,13 @@ public class TimeEntryController {
     @GetMapping
     public PageResponse<TimeEntryResponse> list(@PathVariable UUID companyId,
                                                 @RequestParam(required = false) UUID employeeId,
-                                                @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-                                                @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+                                                @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+                                                @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
                                                 @RequestParam(defaultValue = "0") int page,
                                                 @RequestParam(defaultValue = "20") int size) {
-        return service.list(companyId, employeeId, startDate, endDate, page, size);
+        LocalDate resolvedStartDate = startDate == null ? LocalDate.of(2000, 1, 1) : startDate;
+        LocalDate resolvedEndDate = endDate == null ? LocalDate.of(2100, 12, 31) : endDate;
+        return service.list(companyId, employeeId, resolvedStartDate, resolvedEndDate, page, size);
     }
 
     @PostMapping

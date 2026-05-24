@@ -19,7 +19,7 @@ export class CompanyContextService {
     this.membershipsState.set(memberships);
     this.storage.set('company.memberships', memberships);
     if (!memberships.some((membership) => membership.company.id === this.selectedCompanyIdState())) {
-      this.selectCompany(memberships[0]?.company.id ?? null);
+      this.selectCompany(null);
     }
   }
 

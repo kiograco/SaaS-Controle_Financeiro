@@ -34,4 +34,8 @@ export class TimeImportService extends ApiService {
   errors(companyId: string, batchId: string): Observable<TimeImportError[]> {
     return this.http.get<TimeImportError[]>(`${this.baseUrl}/companies/${companyId}/time/imports/${batchId}/errors`);
   }
+
+  delete(companyId: string, batchId: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/companies/${companyId}/time/imports/${batchId}`);
+  }
 }

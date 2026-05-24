@@ -15,8 +15,8 @@ import { EmptyStateComponent } from '../../shared/components/empty-state.compone
   template: `
     <div class="page-shell">
       <app-page-header
-        title="Trocar Empresa"
-        subtitle="Escolha em qual empresa você deseja trabalhar agora. Cada contexto mantém seus dados e permissões isolados."
+        title="Escolher Empresa"
+        subtitle="Selecione a empresa em que você deseja trabalhar. Cada contexto mantém dados e permissões isolados."
         eyebrow="Multiempresa">
         <button mat-flat-button color="primary" routerLink="/company/create">Cadastrar empresa</button>
       </app-page-header>

@@ -25,11 +25,16 @@ public class TimeReportService {
         var sheets = timeSheetService.listRange(companyId, month.atDay(1), month.atEndOfMonth());
         return new MonthlyTimeReportResponse(
                 month,
-                (int) sheets.stream().map(sheet -> sheet.getEmployee().getId()).distinct().count(),
+                (int) sheets.stream()
+                        .map(sheet -> sheet.getEmployee() == null ? null : sheet.getEmployee().getId())
+                        .filter(java.util.Objects::nonNull)
+                        .distinct()
+                        .count(),
                 sheets.stream().mapToInt(sheet -> sheet.getWorkedMinutes()).sum(),
                 sheets.stream().mapToInt(sheet -> sheet.getOvertimeMinutes()).sum(),
                 sheets.stream().mapToInt(sheet -> sheet.getMissingMinutes()).sum(),
                 sheets.stream()
+                        .filter(sheet -> sheet.getEmployee() != null)
                         .collect(java.util.stream.Collectors.groupingBy(sheet -> sheet.getEmployee().getId()))
                         .entrySet().stream()
                         .map(entry -> {

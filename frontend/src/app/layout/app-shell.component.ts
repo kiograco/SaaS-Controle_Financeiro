@@ -55,14 +55,9 @@ interface MenuItem {
           <button mat-icon-button type="button" class="mobile-trigger" (click)="toggleMobileMenu()">
             <mat-icon>menu</mat-icon>
           </button>
-          <div class="company-picker">
-            <label>Empresa atual</label>
-            <select [value]="companyContext.selectedCompanyId() ?? ''" (change)="onCompanyChange($event)">
-              <option value="">Selecione uma empresa</option>
-              <option *ngFor="let membership of companyContext.memberships()" [value]="membership.company.id">
-                {{ membership.company.tradeName }}
-              </option>
-            </select>
+          <div class="topbar-company" *ngIf="companyContext.selectedMembership() as membership">
+            <strong>{{ membership.company.tradeName }}</strong>
+            <span>Empresa ativa</span>
           </div>
           <div class="topbar-actions">
             <button mat-icon-button type="button" (click)="theme.toggle()"><mat-icon>{{ theme.darkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon></button>
@@ -117,11 +112,13 @@ interface MenuItem {
       display: flex; align-items: center; justify-content: space-between;
       padding: 0.8rem 1rem; gap: 1rem; position: sticky; top: 1rem; z-index: 20;
     }
-    .company-picker label { display: block; font-size: 0.78rem; color: var(--text-soft); }
-    .company-picker select {
-      margin-top: 0.2rem; padding: 0.65rem 0.8rem; min-width: 240px;
-      border-radius: 14px; border: 1px solid var(--border); background: var(--surface);
-      color: var(--text);
+    .topbar-company {
+      display: grid;
+      gap: 0.15rem;
+    }
+    .topbar-company span {
+      font-size: 0.82rem;
+      color: var(--text-soft);
     }
     .topbar-actions { display: flex; align-items: center; gap: 0.35rem; }
     .mobile-trigger { display: none; }
@@ -136,8 +133,7 @@ interface MenuItem {
     }
     @media (max-width: 720px) {
       .topbar { flex-wrap: wrap; }
-      .company-picker { width: 100%; }
-      .company-picker select { width: 100%; min-width: 0; }
+      .topbar-company { width: 100%; }
     }
   `]
 })
@@ -195,11 +191,6 @@ export class AppShellComponent {
       children: item.children?.filter((child) => !child.roles?.length || child.roles.some((role) => roles.includes(role) || roles.includes('SUPER_ADMIN')))
     })).filter((item) => item.route || item.children?.length);
   });
-
-  onCompanyChange(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value;
-    this.companyContext.selectCompany(value || null);
-  }
 
   toggleMobileMenu(): void {
     this.mobileOpen.update((current) => !current);

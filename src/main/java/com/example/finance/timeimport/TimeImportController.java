@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -50,5 +51,10 @@ public class TimeImportController {
     @GetMapping("/{batchId}/errors")
     public List<TimeImportErrorResponse> errors(@PathVariable UUID companyId, @PathVariable UUID batchId) {
         return service.errors(companyId, batchId);
+    }
+
+    @DeleteMapping("/{batchId}")
+    public void delete(@PathVariable UUID companyId, @PathVariable UUID batchId) {
+        service.delete(companyId, batchId);
     }
 }

@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, effect, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CompanyContextService } from '../../../core/services/company-context.service';
 import { TimeSheetService } from '../../../core/services/time-sheet.service';
 import { TimeSheet } from '../../../core/models/time-tracking.models';
@@ -22,7 +23,7 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state.comp
           <input class="form-col-6" type="date" formControlName="endDate">
         </form>
         <div class="actions">
-          <button mat-stroked-button type="button" (click)="load()">Aplicar filtros</button>
+          <button mat-stroked-button type="button" (click)="applyFilters()">Aplicar filtros</button>
         </div>
       </section>
       <app-empty-state *ngIf="!rows().length" title="Nenhum espelho encontrado" description="Ajuste os filtros ou recalcule o período desejado." />
@@ -44,6 +45,8 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state.comp
 })
 export class TimesheetsPageComponent {
   private readonly fb = inject(FormBuilder);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly companyContext = inject(CompanyContextService);
   private readonly service = inject(TimeSheetService);
   readonly rows = signal<TimeSheet[]>([]);
@@ -53,6 +56,23 @@ export class TimesheetsPageComponent {
   });
 
   constructor() {
+    this.route.queryParamMap.subscribe((params) => {
+      const startDate = params.get('startDate');
+      const endDate = params.get('endDate');
+      if (startDate && endDate) {
+        this.form.patchValue({ startDate, endDate }, { emitEvent: false });
+        this.load();
+        return;
+      }
+
+      const { startDate: currentStartDate, endDate: currentEndDate } = this.form.getRawValue();
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { startDate: currentStartDate, endDate: currentEndDate },
+        replaceUrl: true
+      });
+    });
+
     effect(() => {
       const companyId = this.companyContext.selectedCompanyId();
       if (!companyId) {
@@ -70,5 +90,13 @@ export class TimesheetsPageComponent {
     }
     const { startDate, endDate } = this.form.getRawValue();
     this.service.list(companyId, startDate, endDate).subscribe((response) => this.rows.set(response.content));
+  }
+
+  applyFilters(): void {
+    const { startDate, endDate } = this.form.getRawValue();
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { startDate, endDate }
+    });
   }
 }

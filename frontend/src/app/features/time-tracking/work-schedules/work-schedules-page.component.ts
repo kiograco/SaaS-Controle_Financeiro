@@ -18,7 +18,7 @@ export class WorkSchedulesPageComponent {
     emptyTitle: 'Nenhuma jornada cadastrada',
     createLabel: 'Nova jornada',
     service: this.service,
-    initialValue: () => ({ id: null, name: '', expectedDailyMinutes: 480, toleranceMinutes: 10, lunchBreakMinutes: 60, active: true }),
+    initialValue: () => ({ id: null, name: '', expectedDailyMinutes: 480, toleranceMinutes: 10, lunchBreakMinutes: 120, active: true }),
     getId: (item) => item.id,
     columns: [
       { key: 'name', label: 'Nome', cell: (row) => row.name },

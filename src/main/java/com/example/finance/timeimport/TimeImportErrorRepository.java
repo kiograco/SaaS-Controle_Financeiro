@@ -6,4 +6,5 @@ import java.util.UUID;
 
 public interface TimeImportErrorRepository extends SoftDeleteRepository<TimeImportError> {
     List<TimeImportError> findByCompanyIdAndBatchId(UUID companyId, UUID batchId);
+    void deleteByCompanyIdAndBatchId(UUID companyId, UUID batchId);
 }

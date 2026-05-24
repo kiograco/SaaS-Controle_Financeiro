@@ -5,5 +5,5 @@ import { CompanyContextService } from '../services/company-context.service';
 export const companySelectedGuard: CanActivateFn = () => {
   const context = inject(CompanyContextService);
   const router = inject(Router);
-  return context.selectedCompanyId() ? true : router.createUrlTree(['/settings']);
+  return context.selectedCompanyId() ? true : router.createUrlTree(['/company/select']);
 };

@@ -14,4 +14,5 @@ public interface TimeEntryRepository extends SoftDeleteRepository<TimeEntry> {
     Page<TimeEntry> findByCompanyIdAndEntryDateBetween(UUID companyId, LocalDate startDate, LocalDate endDate, Pageable pageable);
     Optional<TimeEntry> findByCompanyIdAndEmployeeIdAndEntryDateAndEntryTimeAndType(UUID companyId, UUID employeeId, LocalDate date, LocalTime time, TimeEntryType type);
     List<TimeEntry> findByCompanyIdAndEmployeeIdAndEntryDate(UUID companyId, UUID employeeId, LocalDate entryDate);
+    List<TimeEntry> findByCompanyIdAndImportBatchId(UUID companyId, UUID importBatchId);
 }

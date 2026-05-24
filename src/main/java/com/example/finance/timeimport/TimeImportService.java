@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -54,7 +55,10 @@ public class TimeImportService {
             DateTimeFormatter.ofPattern("dd-MM-yyyy"),
             DateTimeFormatter.ISO_LOCAL_DATE
     );
-    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
+    private static final List<DateTimeFormatter> TIME_FORMATS = List.of(
+            DateTimeFormatter.ofPattern("HH:mm"),
+            DateTimeFormatter.ofPattern("HH:mm:ss")
+    );
 
     private final MembershipService membershipService;
     private final EmployeeService employeeService;
@@ -110,6 +114,7 @@ public class TimeImportService {
                 entry.setEntryTime(row.hora());
                 entry.setType(mapType(row.tipo()));
                 entry.setSource(TimeEntrySource.CSV_IMPORT);
+                entry.setImportBatch(batch);
                 entry.setNotes("Importado via CSV");
                 timeEntryRepository.save(entry);
                 changedEmployees.add(employee.getId());
@@ -152,6 +157,34 @@ public class TimeImportService {
                 .toList();
     }
 
+    @Transactional
+    public void delete(UUID companyId, UUID batchId) {
+        var company = membershipService.requireCompanyAccess(companyId, WRITE_ROLES);
+        TimeImportBatch batch = batchRepository.findByIdAndCompanyId(batchId, companyId)
+                .orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, "Lote de importacao nao encontrado."));
+
+        List<TimeEntry> importedEntries = timeEntryRepository.findByCompanyIdAndImportBatchId(companyId, batchId);
+        List<UUID> employeeIds = importedEntries.stream()
+                .map(entry -> entry.getEmployee().getId())
+                .distinct()
+                .toList();
+        LocalDate minDate = importedEntries.stream().map(TimeEntry::getEntryDate).min(LocalDate::compareTo).orElse(null);
+        LocalDate maxDate = importedEntries.stream().map(TimeEntry::getEntryDate).max(LocalDate::compareTo).orElse(null);
+
+        if (!importedEntries.isEmpty()) {
+            timeEntryRepository.deleteAll(importedEntries);
+        }
+        errorRepository.deleteByCompanyIdAndBatchId(companyId, batchId);
+        batchRepository.delete(batch);
+
+        if (minDate != null && maxDate != null) {
+            for (UUID employeeId : employeeIds) {
+                timeSheetService.recalculate(companyId, employeeId, minDate, maxDate);
+            }
+        }
+        auditService.log(company, "DELETE", "TIME_IMPORT_BATCH", batchId, "Importacao de ponto excluida.");
+    }
+
     private List<TimeImportPreviewRow> parse(UUID companyId, MultipartFile file, boolean createMissingEmployees) {
         validateFile(file);
         try (var reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
@@ -177,7 +210,7 @@ public class TimeImportService {
     }
 
     private CSVParser buildParser(MultipartFile file) throws IOException {
-        String content = new String(file.getBytes(), StandardCharsets.UTF_8);
+        String content = normalizeCsvContent(new String(file.getBytes(), StandardCharsets.UTF_8));
         char delimiter = content.lines().findFirst().orElse("").contains(";") ? ';' : ',';
         CSVFormat format = CSVFormat.DEFAULT.builder()
                 .setDelimiter(delimiter)
@@ -240,7 +273,17 @@ public class TimeImportService {
     }
 
     private String safe(CSVRecord record, String column) {
-        return record.isMapped(column) ? record.get(column).trim() : "";
+        if (record.isMapped(column)) {
+            return record.get(column).trim();
+        }
+
+        String normalizedColumn = normalizeHeader(column);
+        for (String header : record.toMap().keySet()) {
+            if (normalizeHeader(header).equals(normalizedColumn)) {
+                return record.get(header).trim();
+            }
+        }
+        return "";
     }
 
     private LocalDate parseDate(String value) {
@@ -254,11 +297,13 @@ public class TimeImportService {
     }
 
     private LocalTime parseTime(String value) {
-        try {
-            return LocalTime.parse(value, TIME_FORMAT);
-        } catch (DateTimeParseException ex) {
-            return null;
+        for (DateTimeFormatter formatter : TIME_FORMATS) {
+            try {
+                return LocalTime.parse(value, formatter);
+            } catch (DateTimeParseException ignored) {
+            }
         }
+        return null;
     }
 
     private TimeEntryType mapType(String value) {
@@ -270,10 +315,10 @@ public class TimeImportService {
     }
 
     private TimeEntryType mapTypeOrNull(String value) {
-        return switch (value == null ? "" : value.trim().toUpperCase()) {
+        return switch (normalizeLabel(value)) {
             case "ENTRADA" -> TimeEntryType.CLOCK_IN;
-            case "INICIO_ALMOCO" -> TimeEntryType.LUNCH_START;
-            case "FIM_ALMOCO" -> TimeEntryType.LUNCH_END;
+            case "INICIO_ALMOCO", "SAIDA_ALMOCO" -> TimeEntryType.LUNCH_START;
+            case "FIM_ALMOCO", "RETORNO_ALMOCO" -> TimeEntryType.LUNCH_END;
             case "SAIDA" -> TimeEntryType.CLOCK_OUT;
             case "AJUSTE_MANUAL" -> TimeEntryType.MANUAL_ADJUSTMENT;
             default -> null;
@@ -282,5 +327,22 @@ public class TimeImportService {
 
     private String mask(String rawContent) {
         return rawContent.replaceAll("(\\d{3})\\d{5}(\\d{3})", "$1*****$2");
+    }
+
+    private String normalizeCsvContent(String content) {
+        return content.replaceFirst("^\\uFEFF", "");
+    }
+
+    private String normalizeHeader(String value) {
+        return normalizeLabel(value).replace("_", "");
+    }
+
+    private String normalizeLabel(String value) {
+        String trimmed = value == null ? "" : value.trim();
+        String normalized = java.text.Normalizer.normalize(trimmed, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "");
+        return normalized.toUpperCase(Locale.ROOT)
+                .replaceAll("[^A-Z0-9]+", "_")
+                .replaceAll("^_+|_+$", "");
     }
 }

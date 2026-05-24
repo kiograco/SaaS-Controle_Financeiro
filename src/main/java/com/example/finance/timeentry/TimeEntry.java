@@ -2,6 +2,7 @@ package com.example.finance.timeentry;
 
 import com.example.finance.common.entity.CompanyScopedEntity;
 import com.example.finance.employee.Employee;
+import com.example.finance.timeimport.TimeImportBatch;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -40,6 +41,10 @@ public class TimeEntry extends CompanyScopedEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private TimeEntrySource source;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "import_batch_id")
+    private TimeImportBatch importBatch;
 
     @Column(length = 255)
     private String notes;
