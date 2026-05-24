@@ -1,0 +1,16 @@
+.env
+target/
+.codex/
+.agents/
+
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+
+.idea/
+.vscode/
+*.iml
+
+*.log
+Thumbs.db
+.DS_Store
