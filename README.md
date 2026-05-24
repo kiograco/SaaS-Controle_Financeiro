@@ -70,7 +70,6 @@ Frontend em `frontend/src/app`:
 
 - Ao entrar no sistema, a escolha da empresa e obrigatoria
 - Se nenhuma empresa estiver ativa, o usuario e redirecionado para `/company/select`
-- O seletor do topo foi removido; a troca de empresa fica centralizada na tela de selecao
 
 ## Gestao de ponto
 
