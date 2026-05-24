@@ -4,6 +4,7 @@ import com.example.finance.common.entity.CompanyScopedEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import java.time.LocalTime;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.SQLRestriction;
@@ -26,6 +27,12 @@ public class WorkSchedule extends CompanyScopedEntity {
 
     @Column(nullable = false)
     private Integer lunchBreakMinutes;
+
+    @Column(nullable = false)
+    private LocalTime startTime;
+
+    @Column(nullable = false)
+    private LocalTime endTime;
 
     @Column(nullable = false)
     private boolean active = true;

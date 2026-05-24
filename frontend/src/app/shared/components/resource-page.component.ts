@@ -22,7 +22,7 @@ export interface ResourceFieldOption {
 export interface ResourceField {
   key: string;
   label: string;
-  type: 'text' | 'email' | 'number' | 'money' | 'date' | 'select' | 'textarea';
+  type: 'text' | 'email' | 'number' | 'money' | 'date' | 'time' | 'select' | 'textarea';
   required?: boolean;
   options?: ResourceFieldOption[] | (() => ResourceFieldOption[]);
   validators?: ValidatorFn[];

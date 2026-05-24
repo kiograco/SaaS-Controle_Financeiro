@@ -19,6 +19,8 @@ export interface WorkSchedule {
   expectedDailyMinutes: number;
   toleranceMinutes: number;
   lunchBreakMinutes: number;
+  startTime: string;
+  endTime: string;
   active: boolean;
 }
 

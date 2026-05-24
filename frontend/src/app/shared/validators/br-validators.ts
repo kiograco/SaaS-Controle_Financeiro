@@ -95,6 +95,17 @@ export function bankAccountNumberValidator(bankFieldKey = 'bankName'): Validator
   };
 }
 
+export function time24hValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const value = String(control.value ?? '').trim();
+    if (!value) {
+      return null;
+    }
+
+    return /^([01]\d|2[0-3]):[0-5]\d$/.test(value) ? null : { time24h: true };
+  };
+}
+
 export function brDateValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     const value = String(control.value ?? '');

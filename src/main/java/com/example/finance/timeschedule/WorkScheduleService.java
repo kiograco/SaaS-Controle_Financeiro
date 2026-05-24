@@ -91,11 +91,13 @@ public class WorkScheduleService {
         entity.setExpectedDailyMinutes(request.expectedDailyMinutes());
         entity.setToleranceMinutes(request.toleranceMinutes());
         entity.setLunchBreakMinutes(request.lunchBreakMinutes());
+        entity.setStartTime(request.startTime());
+        entity.setEndTime(request.endTime());
         entity.setActive(request.active());
     }
 
     private WorkScheduleResponse toResponse(WorkSchedule entity) {
         return new WorkScheduleResponse(entity.getId(), entity.getName(), entity.getExpectedDailyMinutes(),
-                entity.getToleranceMinutes(), entity.getLunchBreakMinutes(), entity.isActive());
+                entity.getToleranceMinutes(), entity.getLunchBreakMinutes(), entity.getStartTime(), entity.getEndTime(), entity.isActive());
     }
 }

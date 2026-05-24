@@ -1,8 +1,9 @@
-import { Component, inject } from '@angular/core';
-import { ResourcePageComponent, ResourcePageConfig } from '../../../shared/components/resource-page.component';
-import { TimeEntry } from '../../../core/models/time-tracking.models';
+import { Component, effect, inject, signal } from '@angular/core';
+import { ResourceFieldOption, ResourcePageComponent, ResourcePageConfig } from '../../../shared/components/resource-page.component';
+import { CompanyContextService } from '../../../core/services/company-context.service';
+import { EmployeeService } from '../../../core/services/employee.service';
+import { Employee, TimeEntry } from '../../../core/models/time-tracking.models';
 import { TimeEntryService } from '../../../core/services/time-entry.service';
-
 @Component({
   selector: 'app-time-entries-page',
   standalone: true,
@@ -10,7 +11,35 @@ import { TimeEntryService } from '../../../core/services/time-entry.service';
   template: `<app-resource-page [config]="config" />`
 })
 export class TimeEntriesPageComponent {
+  private readonly companyContext = inject(CompanyContextService);
+  private readonly employeeService = inject(EmployeeService);
   private readonly service = inject(TimeEntryService);
+  readonly employeeOptions = signal<ResourceFieldOption[]>([]);
+
+  constructor() {
+    effect(() => {
+      const companyId = this.companyContext.selectedCompanyId();
+      if (!companyId) {
+        this.employeeOptions.set([]);
+        return;
+      }
+
+      this.employeeService.list(companyId, { page: 0, size: 200 }).subscribe({
+        next: (response) => {
+          this.employeeOptions.set(
+            response.content
+              .filter((employee: Employee) => Boolean(employee.id))
+              .map((employee: Employee) => ({
+                value: employee.id ?? '',
+                label: employee.name
+              }))
+          );
+        },
+        error: () => this.employeeOptions.set([])
+      });
+    });
+  }
+
   readonly config: ResourcePageConfig<TimeEntry> = {
     title: 'Registros de Ponto',
     subtitle: 'Cadastre marcações manuais e acompanhe registros do período.',
@@ -27,9 +56,9 @@ export class TimeEntriesPageComponent {
       { key: 'type', label: 'Tipo', cell: (row) => row.type }
     ],
     fields: [
-      { key: 'employeeId', label: 'ID do funcionário', type: 'text', required: true },
+      { key: 'employeeId', label: 'Funcionário', type: 'select', required: true, searchable: true, options: () => this.employeeOptions() },
       { key: 'entryDate', label: 'Data', type: 'date', required: true },
-      { key: 'entryTime', label: 'Hora', type: 'text', required: true },
+      { key: 'entryTime', label: 'Hora', type: 'time', required: true },
       { key: 'type', label: 'Tipo', type: 'select', required: true, options: [
         { label: 'Entrada', value: 'CLOCK_IN' },
         { label: 'Início do Almoço', value: 'LUNCH_START' },
