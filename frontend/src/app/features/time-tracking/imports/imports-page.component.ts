@@ -171,6 +171,7 @@ export class ImportsPageComponent {
     }
     this.service.confirm(companyId, this.file, this.form.getRawValue().createMissingEmployees).subscribe(() => {
       this.toast.success('Importação concluída', 'O lote foi processado com sucesso.');
+      this.selectedErrors.set([]);
       this.loadBatches();
     });
   }
@@ -200,6 +201,7 @@ export class ImportsPageComponent {
 
     this.service.delete(companyId, batchId).subscribe(() => {
       this.toast.success('Importação excluída', 'O lote importado e suas marcações foram removidos.');
+      this.previewState.set(null);
       this.selectedErrors.set([]);
       this.loadBatches();
     });

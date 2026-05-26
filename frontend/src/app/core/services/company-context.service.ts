@@ -18,9 +18,18 @@ export class CompanyContextService {
   setMemberships(memberships: CompanyMembership[]): void {
     this.membershipsState.set(memberships);
     this.storage.set('company.memberships', memberships);
-    if (!memberships.some((membership) => membership.company.id === this.selectedCompanyIdState())) {
-      this.selectCompany(null);
+    const currentCompanyId = this.selectedCompanyIdState();
+    if (currentCompanyId && memberships.some((membership) => membership.company.id === currentCompanyId)) {
+      return;
     }
+
+    const firstActiveMembership = memberships.find((membership) => membership.active && membership.company.active);
+    if (firstActiveMembership) {
+      this.selectCompany(firstActiveMembership.company.id);
+      return;
+    }
+
+    this.selectCompany(null);
   }
 
   upsertMembership(membership: CompanyMembership): void {

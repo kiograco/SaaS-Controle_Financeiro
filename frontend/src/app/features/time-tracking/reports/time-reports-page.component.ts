@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, effect, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { CompanyContextService } from '../../../core/services/company-context.service';
 import { TimeReportService } from '../../../core/services/time-report.service';
@@ -45,6 +46,7 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state.comp
 export class TimeReportsPageComponent {
   private readonly fb = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly companyContext = inject(CompanyContextService);
   private readonly service = inject(TimeReportService);
   readonly report = signal<MonthlyTimeReport | null>(null);
@@ -76,6 +78,12 @@ export class TimeReportsPageComponent {
     if (!companyId) {
       return;
     }
-    this.service.monthly(companyId, this.form.getRawValue().month).subscribe((report) => this.report.set(report));
+    const { month } = this.form.getRawValue();
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { month },
+      replaceUrl: true
+    });
+    this.service.monthly(companyId, month).subscribe((report) => this.report.set(report));
   }
 }

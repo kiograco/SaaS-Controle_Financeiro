@@ -22,6 +22,7 @@ export class CategoriesPageComponent {
     getId: (item) => item.id,
     columns: [
       { key: 'name', label: 'Nome', cell: (row) => row.name },
+      { key: 'description', label: 'Descrição', cell: (row) => row.description },
       { key: 'type', label: 'Tipo', cell: (row) => row.type === 'INCOME' ? 'Receita' : 'Despesa' },
       { key: 'active', label: 'Status', cell: (row) => row.active ? 'Ativa' : 'Inativa' }
     ],

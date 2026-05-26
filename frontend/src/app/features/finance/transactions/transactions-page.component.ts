@@ -6,6 +6,19 @@ import { BankAccountService } from '../../../core/services/bank-account.service'
 import { TransactionService } from '../../../core/services/transaction.service';
 import { positiveMoneyValidator } from '../../../shared/validators/br-validators';
 
+function getTransactionTypeLabel(type: FinancialTransaction['type']): string {
+  switch (type) {
+    case 'INCOME':
+      return 'Receita';
+    case 'EXPENSE':
+      return 'Despesa';
+    case 'TRANSFER':
+      return 'Transferência';
+    default:
+      return type;
+  }
+}
+
 @Component({
   selector: 'app-transactions-page',
   standalone: true,
@@ -53,7 +66,7 @@ export class TransactionsPageComponent {
     getId: (item) => item.id,
     columns: [
       { key: 'description', label: 'Descrição', cell: (row) => row.description },
-      { key: 'type', label: 'Tipo', cell: (row) => row.type },
+      { key: 'type', label: 'Tipo', cell: (row) => getTransactionTypeLabel(row.type) },
       { key: 'transactionDate', label: 'Data', cell: (row) => row.transactionDate },
       { key: 'amount', label: 'Valor', cell: (row) => String(row.amount) }
     ],

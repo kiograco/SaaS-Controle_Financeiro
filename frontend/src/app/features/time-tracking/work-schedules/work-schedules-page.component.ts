@@ -115,33 +115,8 @@ export class WorkSchedulesPageComponent {
         return;
       }
 
-      this.employeeService.list(companyId, { page: 0, size: 200 }).subscribe({
-        next: (response) => {
-          this.employeeOptions.set(
-            response.content
-              .filter((employee: Employee) => Boolean(employee.id))
-              .map((employee: Employee) => ({
-                value: employee.id ?? '',
-                label: employee.name
-              }))
-          );
-        },
-        error: () => this.employeeOptions.set([])
-      });
-
-      this.service.list(companyId, { page: 0, size: 100 }).subscribe({
-        next: (response) => {
-          this.scheduleOptions.set(
-            response.content
-              .filter((schedule: WorkSchedule) => Boolean(schedule.id))
-              .map((schedule: WorkSchedule) => ({
-                value: schedule.id ?? '',
-                label: `${schedule.name} • ${schedule.startTime} às ${schedule.endTime} • ${schedule.expectedDailyMinutes} min • tolerância ${schedule.toleranceMinutes} min`
-              }))
-          );
-        },
-        error: () => this.scheduleOptions.set([])
-      });
+      this.loadEmployeeOptions(companyId);
+      this.loadScheduleOptions(companyId);
     });
   }
 
@@ -186,7 +161,40 @@ export class WorkSchedulesPageComponent {
           workScheduleId: '',
           startDate: new Date().toISOString().slice(0, 10)
         });
+        this.loadScheduleOptions(companyId);
       }
+    });
+  }
+
+  private loadEmployeeOptions(companyId: string): void {
+    this.employeeService.list(companyId, { page: 0, size: 200 }).subscribe({
+      next: (response) => {
+        this.employeeOptions.set(
+          response.content
+            .filter((employee: Employee) => Boolean(employee.id))
+            .map((employee: Employee) => ({
+              value: employee.id ?? '',
+              label: employee.name
+            }))
+        );
+      },
+      error: () => this.employeeOptions.set([])
+    });
+  }
+
+  private loadScheduleOptions(companyId: string): void {
+    this.service.list(companyId, { page: 0, size: 100 }).subscribe({
+      next: (response) => {
+        this.scheduleOptions.set(
+          response.content
+            .filter((schedule: WorkSchedule) => Boolean(schedule.id))
+            .map((schedule: WorkSchedule) => ({
+              value: schedule.id ?? '',
+              label: `${schedule.name} • ${schedule.startTime} às ${schedule.endTime} • ${schedule.expectedDailyMinutes} min • tolerância ${schedule.toleranceMinutes} min`
+            }))
+        );
+      },
+      error: () => this.scheduleOptions.set([])
     });
   }
 }

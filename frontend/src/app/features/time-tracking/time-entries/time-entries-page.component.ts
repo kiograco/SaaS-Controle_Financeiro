@@ -4,6 +4,24 @@ import { CompanyContextService } from '../../../core/services/company-context.se
 import { EmployeeService } from '../../../core/services/employee.service';
 import { Employee, TimeEntry } from '../../../core/models/time-tracking.models';
 import { TimeEntryService } from '../../../core/services/time-entry.service';
+
+function getTimeEntryTypeLabel(type: TimeEntry['type']): string {
+  switch (type) {
+    case 'CLOCK_IN':
+      return 'Entrada';
+    case 'LUNCH_START':
+      return 'Início do Almoço';
+    case 'LUNCH_END':
+      return 'Fim do Almoço';
+    case 'CLOCK_OUT':
+      return 'Saída';
+    case 'MANUAL_ADJUSTMENT':
+      return 'Ajuste Manual';
+    default:
+      return type;
+  }
+}
+
 @Component({
   selector: 'app-time-entries-page',
   standalone: true,
@@ -53,7 +71,7 @@ export class TimeEntriesPageComponent {
       { key: 'employeeName', label: 'Funcionário', cell: (row) => row.employeeName ?? row.employeeId },
       { key: 'entryDate', label: 'Data', cell: (row) => row.entryDate },
       { key: 'entryTime', label: 'Hora', cell: (row) => row.entryTime },
-      { key: 'type', label: 'Tipo', cell: (row) => row.type }
+      { key: 'type', label: 'Tipo', cell: (row) => getTimeEntryTypeLabel(row.type) }
     ],
     fields: [
       { key: 'employeeId', label: 'Funcionário', type: 'select', required: true, searchable: true, options: () => this.employeeOptions() },

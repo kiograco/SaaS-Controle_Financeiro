@@ -14,7 +14,7 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state.comp
   template: `
     <div class="page-shell">
       <app-page-header title="Relatórios Financeiros" subtitle="Resumo mensal consolidado da empresa selecionada." eyebrow="Relatórios" />
-      <app-empty-state *ngIf="!report()" title="Selecione uma empresa" description="Os relatórios serão exibidos após selecionar uma empresa." />
+      <app-empty-state *ngIf="!companyContext.selectedCompanyId()" title="Selecione uma empresa" description="Os relatórios serão exibidos após selecionar uma empresa." />
       <section class="cards" *ngIf="report() as data">
         <app-metric-card title="Fluxo de caixa mensal" helper="Resultado do período" [value]="data.monthlyCashFlow" />
         <app-metric-card title="Receitas totais" helper="Entradas registradas" [value]="data.totalIncome" />
@@ -28,7 +28,7 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state.comp
   styles: [`.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; } @media (max-width: 1000px) { .cards { grid-template-columns: 1fr; } }`]
 })
 export class FinanceReportsPageComponent {
-  private readonly companyContext = inject(CompanyContextService);
+  readonly companyContext = inject(CompanyContextService);
   private readonly service = inject(DashboardService);
   readonly report = signal<FinancialReport | null>(null);
 
