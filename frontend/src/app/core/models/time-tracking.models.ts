@@ -16,6 +16,7 @@ export interface Employee {
 export interface WorkSchedule {
   id: string | null;
   name: string;
+  workingDays: string[];
   expectedDailyMinutes: number;
   toleranceMinutes: number;
   lunchBreakMinutes: number;

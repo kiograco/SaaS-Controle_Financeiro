@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Injector, Input, OnInit, effect, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Injector, Input, OnInit, Output, effect, inject, signal } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
@@ -25,6 +25,7 @@ export interface ResourceField {
   type: 'text' | 'email' | 'number' | 'money' | 'date' | 'time' | 'select' | 'textarea';
   required?: boolean;
   options?: ResourceFieldOption[] | (() => ResourceFieldOption[]);
+  multiple?: boolean;
   validators?: ValidatorFn[];
   inputMode?: 'text' | 'numeric' | 'decimal';
   maxLength?: number;
@@ -104,7 +105,7 @@ export interface ResourcePageConfig<T> {
             </mat-form-field>
             <mat-form-field appearance="outline" class="form-col-6" *ngIf="field.type === 'select' && !field.searchable">
               <mat-label>{{ field.label }}</mat-label>
-              <mat-select [formControlName]="field.key">
+              <mat-select [formControlName]="field.key" [multiple]="field.multiple === true">
                 <mat-option *ngFor="let option of getFieldOptions(field)" [value]="option.value">{{ option.label }}</mat-option>
               </mat-select>
             </mat-form-field>
@@ -150,6 +151,8 @@ export class ResourcePageComponent implements OnInit {
   private readonly injector = inject(Injector);
 
   @Input({ required: true }) config!: ResourcePageConfig<any>;
+  @Output() saved = new EventEmitter<void>();
+  @Output() removed = new EventEmitter<void>();
 
   readonly rows = signal<any[]>([]);
   readonly editing = signal(false);
@@ -232,6 +235,7 @@ export class ResourcePageComponent implements OnInit {
         this.toast.success('Operação concluída', 'Os dados foram salvos com sucesso.');
         this.cancel();
         this.load();
+        this.saved.emit();
       }
     });
   }
@@ -246,6 +250,7 @@ export class ResourcePageComponent implements OnInit {
       next: () => {
         this.toast.success('Registro removido', 'O item foi removido com sucesso.');
         this.load();
+        this.removed.emit();
       }
     });
   }

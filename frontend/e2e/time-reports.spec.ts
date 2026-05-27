@@ -29,7 +29,7 @@ test.describe('Relatórios de ponto', () => {
     await expect(page.getByRole('heading', { name: 'Relatórios de Ponto' })).toBeVisible();
     await expect(page.getByText('Total de horas trabalhadas')).toBeVisible();
     await expect(page.getByText('Horas extras')).toBeVisible();
-    await expect(page.getByText('Faltas')).toBeVisible();
+    await expect(page.getByText('Faltas', { exact: true })).toBeVisible();
     await expect(page.getByText('Ana Silva')).toBeVisible();
     await page.locator('input[type="month"]').fill('2026-04');
     await page.getByRole('button', { name: 'Aplicar mês' }).click();

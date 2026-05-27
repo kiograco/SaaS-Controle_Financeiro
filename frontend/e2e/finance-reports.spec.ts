@@ -13,8 +13,8 @@ test.describe('Relatórios financeiros', () => {
     await expect(page.getByText('Fluxo de caixa mensal')).toBeVisible();
     await expect(page.getByText('Receitas totais')).toBeVisible();
     await expect(page.getByText('Despesas totais')).toBeVisible();
-    await expect(page.getByText('Contas a pagar')).toBeVisible();
-    await expect(page.getByText('Contas a receber')).toBeVisible();
+    await expect(page.getByText('Contas a pagar', { exact: true })).toBeVisible();
+    await expect(page.getByText('Contas a receber', { exact: true })).toBeVisible();
     await expect(page.getByText('Títulos vencidos')).toBeVisible();
   });
 });

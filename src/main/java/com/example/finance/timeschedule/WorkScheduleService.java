@@ -9,9 +9,13 @@ import com.example.finance.timeschedule.dto.EmployeeWorkScheduleRequest;
 import com.example.finance.timeschedule.dto.WorkScheduleRequest;
 import com.example.finance.timeschedule.dto.WorkScheduleResponse;
 import com.example.finance.user.Role;
+import java.time.DayOfWeek;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -88,6 +92,7 @@ public class WorkScheduleService {
 
     private void apply(WorkScheduleRequest request, WorkSchedule entity) {
         entity.setName(request.name());
+        entity.setWorkingDays(serializeWorkingDays(request.workingDays()));
         entity.setExpectedDailyMinutes(request.expectedDailyMinutes());
         entity.setToleranceMinutes(request.toleranceMinutes());
         entity.setLunchBreakMinutes(request.lunchBreakMinutes());
@@ -97,7 +102,21 @@ public class WorkScheduleService {
     }
 
     private WorkScheduleResponse toResponse(WorkSchedule entity) {
-        return new WorkScheduleResponse(entity.getId(), entity.getName(), entity.getExpectedDailyMinutes(),
+        return new WorkScheduleResponse(entity.getId(), entity.getName(), parseWorkingDays(entity.getWorkingDays()), entity.getExpectedDailyMinutes(),
                 entity.getToleranceMinutes(), entity.getLunchBreakMinutes(), entity.getStartTime(), entity.getEndTime(), entity.isActive());
+    }
+
+    private String serializeWorkingDays(List<DayOfWeek> workingDays) {
+        return workingDays.stream()
+                .distinct()
+                .map(DayOfWeek::name)
+                .collect(Collectors.joining(","));
+    }
+
+    private List<DayOfWeek> parseWorkingDays(String workingDays) {
+        return Arrays.stream(workingDays.split(","))
+                .filter(day -> !day.isBlank())
+                .map(DayOfWeek::valueOf)
+                .toList();
     }
 }

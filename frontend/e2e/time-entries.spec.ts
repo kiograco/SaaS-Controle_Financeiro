@@ -39,10 +39,10 @@ test.describe('Registros de ponto', () => {
     await page.getByRole('button', { name: 'Salvar' }).click();
     await expect(page.getByText('08:10')).toBeVisible();
 
-    await page.locator('tr', { hasText: '08:00' }).getByRole('button', { name: 'Excluir' }).click();
-    await expect(page.getByText('08:00')).toHaveCount(0);
+    await page.locator('tr', { hasText: '08:10' }).getByRole('button', { name: 'Excluir' }).click();
+    await expect(page.getByText('08:10')).toHaveCount(0);
 
-    await page.getByPlaceholder('Digite um termo para filtrar').fill('ALMOÇO');
-    await expect(page.getByText('LUNCH_START')).toBeVisible();
+    await page.getByPlaceholder('Digite um termo para filtrar').fill('LUNCH_START');
+    await expect(page.getByText('Início do Almoço')).toBeVisible();
   });
 });

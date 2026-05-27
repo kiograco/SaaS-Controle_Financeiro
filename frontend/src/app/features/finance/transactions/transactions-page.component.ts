@@ -52,7 +52,7 @@ export class TransactionsPageComponent {
         },
         error: () => this.bankAccountOptions.set([])
       });
-    });
+    }, { allowSignalWrites: true });
   }
 
   readonly config: ResourcePageConfig<FinancialTransaction> = {

@@ -26,10 +26,10 @@ describe('companySelectedGuard', () => {
     expect(result).toBeTrue();
   });
 
-  it('deve redirecionar para configuracoes quando nao houver empresa', () => {
+  it('deve redirecionar para selecao de empresa quando nao houver empresa', () => {
     const result = TestBed.runInInjectionContext(() => companySelectedGuard({} as never, {} as never));
 
     expect(result instanceof UrlTree).toBeTrue();
-    expect(router.createUrlTree).toHaveBeenCalledWith(['/settings']);
+    expect(router.createUrlTree).toHaveBeenCalledWith(['/company/select']);
   });
 });

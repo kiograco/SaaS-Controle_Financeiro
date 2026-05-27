@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const port = process.env['E2E_PORT'] ?? '4200';
+const baseURL = `http://127.0.0.1:${port}`;
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -8,7 +11,7 @@ export default defineConfig({
   workers: process.env['CI'] ? 1 : undefined,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
-    baseURL: 'http://127.0.0.1:4200',
+    baseURL,
     trace: 'on-first-retry'
   },
   projects: [
@@ -18,8 +21,8 @@ export default defineConfig({
     }
   ],
   webServer: {
-    command: 'npm start',
-    url: 'http://127.0.0.1:4200',
+    command: `npx ng serve --host 0.0.0.0 --port ${port}`,
+    url: baseURL,
     reuseExistingServer: !process.env['CI'],
     timeout: 120 * 1000
   }

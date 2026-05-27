@@ -55,7 +55,7 @@ export class TimeEntriesPageComponent {
         },
         error: () => this.employeeOptions.set([])
       });
-    });
+    }, { allowSignalWrites: true });
   }
 
   readonly config: ResourcePageConfig<TimeEntry> = {

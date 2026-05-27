@@ -19,6 +19,9 @@ public class WorkSchedule extends CompanyScopedEntity {
     @Column(nullable = false, length = 120)
     private String name;
 
+    @Column(nullable = false, length = 80)
+    private String workingDays;
+
     @Column(nullable = false)
     private Integer expectedDailyMinutes;
 

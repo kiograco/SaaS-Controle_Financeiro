@@ -16,7 +16,7 @@ test.describe('Jornadas', () => {
       endpoint: 'work-schedules',
       searchFields: ['name', 'startTime', 'endTime'],
       initialRecords: [
-        { id: 'ws-1', name: 'Comercial', expectedDailyMinutes: 480, toleranceMinutes: 10, lunchBreakMinutes: 60, startTime: '08:00', endTime: '17:00', active: true }
+        { id: 'ws-1', name: 'Comercial', workingDays: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'], expectedDailyMinutes: 480, toleranceMinutes: 10, lunchBreakMinutes: 60, startTime: '08:00', endTime: '17:00', active: true }
       ]
     });
     await page.route(`**/api/v1/companies/${companyId}/work-schedules/assignments`, async (route) => {
@@ -29,23 +29,33 @@ test.describe('Jornadas', () => {
     await expect(page.getByRole('heading', { name: 'Jornadas' })).toBeVisible();
     await page.getByRole('button', { name: 'Nova jornada' }).click();
     await page.getByLabel('Nome').fill('Administrativo');
+    await page.getByLabel('Dias da semana').click();
+    await page.getByRole('option', { name: 'Segunda-feira' }).click();
+    await page.keyboard.press('Escape');
     await page.getByLabel('Horário de entrada').fill('09:00');
     await page.getByLabel('Horário de saída').fill('18:00');
     await page.getByLabel('Minutos diários esperados').fill('480');
     await page.getByLabel('Tolerância').fill('15');
     await page.getByLabel('Minutos de descanso').fill('60');
-    await page.getByRole('button', { name: 'Salvar' }).click();
+    const createRequest = page.waitForRequest((request) =>
+      request.method() === 'POST' && request.url().endsWith(`/api/v1/companies/${companyId}/work-schedules`)
+    );
+    await page.getByRole('button', { name: 'Salvar', exact: true }).click();
+    const createPayload = (await createRequest).postDataJSON();
+    expect(createPayload.workingDays).toEqual(['TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY']);
     await expect(page.getByText('Administrativo')).toBeVisible();
 
     await page.locator('tr', { hasText: 'Comercial' }).getByRole('button', { name: 'Editar' }).click();
     await page.getByLabel('Tolerância').fill('20');
-    await page.getByRole('button', { name: 'Salvar' }).click();
+    await page.getByRole('button', { name: 'Salvar', exact: true }).click();
     await expect(page.getByText('20')).toBeVisible();
 
-    await page.getByLabel('Funcionário').click();
+    await page.getByLabel('Funcionário').fill('Ana');
+    await expect(page.getByRole('option', { name: 'Ana Silva' })).toBeVisible();
     await page.getByRole('option', { name: 'Ana Silva' }).click();
-    await page.getByLabel('Jornada').click();
-    await page.getByRole('option', { name: /Administrativo|Comercial/ }).first().click();
+    await page.getByLabel('Jornada').fill('Admin');
+    await expect(page.getByRole('option', { name: /Administrativo/ })).toBeVisible();
+    await page.getByRole('option', { name: /Administrativo/ }).click();
     await page.getByRole('button', { name: 'Salvar vínculo' }).click();
     await expect(page.getByText('Jornada vinculada')).toBeVisible();
 

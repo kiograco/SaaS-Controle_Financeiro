@@ -10,6 +10,7 @@ import com.example.finance.timeschedule.WorkScheduleRepository;
 import com.example.finance.user.Role;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -72,9 +73,12 @@ class TimeImportIntegrationTest extends IntegrationTestBase {
         WorkSchedule schedule = new WorkSchedule();
         schedule.setCompany(ctx.company());
         schedule.setName("Padrao");
+        schedule.setWorkingDays("MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY");
         schedule.setExpectedDailyMinutes(480);
         schedule.setToleranceMinutes(10);
         schedule.setLunchBreakMinutes(60);
+        schedule.setStartTime(LocalTime.of(8, 0));
+        schedule.setEndTime(LocalTime.of(18, 0));
         schedule.setActive(true);
         schedule = workScheduleRepository.saveAndFlush(schedule);
 
